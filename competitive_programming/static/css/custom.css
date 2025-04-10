@@ -14,3 +14,21 @@
 
 .submission-accepted { background-color: #d4edda; }
 .submission-rejected { background-color: #f8d7da; }
+
+/* Problem/Contest Creation Styles */
+.tag-checkboxes, .problem-checklist {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.tag-checkboxes div, .problem-checklist div {
+    margin: 5px 0;
+}
+
+.datetimepicker {
+    background-color: white !important;
+    cursor: pointer !important;
+}

@@ -1,0 +1,54 @@
+{% extends 'portal/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-white">
+                <h4>Edit Problem: {{ problem.title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Difficulty</label>
+                            {{ form.difficulty }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Time Limit (ms)</label>
+                            {{ form.time_limit }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Memory Limit (KB)</label>
+                            {{ form.memory_limit }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tags</label>
+                        <div class="tag-checkboxes">
+                            {{ form.tags }}
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                        <a href="{% url 'problem_detail' problem.id %}" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'portal/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Create New Problem</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Difficulty</label>
+                            {{ form.difficulty }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Time Limit (ms)</label>
+                            {{ form.time_limit }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Memory Limit (KB)</label>
+                            {{ form.memory_limit }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tags</label>
+                        <div class="tag-checkboxes">
+                            {{ form.tags }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-save me-2"></i> Create Problem
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

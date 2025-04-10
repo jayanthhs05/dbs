@@ -53,8 +53,9 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'profile' username=user.username %}">Profile</a></li>
                             {% if user.role == 'problem_setter' %}
-                            <li><a class="dropdown-item" href="{% url 'create_problem' %}">Create Problem</a></li>
-                            <li><a class="dropdown-item" href="{% url 'create_contest' %}">Create Contest</a></li>
+                                <li><a class="dropdown-item" href="{% url 'my_problems' %}">My Problems</a></li>
+                                <li><a class="dropdown-item" href="{% url 'create_problem' %}">Create Problem</a></li>
+                                <li><a class="dropdown-item" href="{% url 'create_contest' %}">Create Contest</a></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
