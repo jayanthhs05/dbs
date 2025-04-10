@@ -1,0 +1,16 @@
+/* Custom CSS Enhancements */
+.code-editor {
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.difficulty-easy { color: #28a745; }
+.difficulty-medium { color: #ffc107; }
+.difficulty-hard { color: #dc3545; }
+
+.submission-accepted { background-color: #d4edda; }
+.submission-rejected { background-color: #f8d7da; }

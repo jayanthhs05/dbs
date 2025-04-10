@@ -1,0 +1,32 @@
+{% extends 'portal/base.html' %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <h4>{{ profile_user.username }}'s Profile</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h5>User Info</h5>
+                <p><strong>Rating:</strong> {{ profile_user.rating }}</p>
+                <p><strong>Joined:</strong> {{ profile_user.date_joined|date:"M Y" }}</p>
+            </div>
+            <div class="col-md-8">
+                <h5>Recent Submissions</h5>
+                <div class="list-group">
+                    {% for submission in submissions %}
+                    <a href="{% url 'submission_detail' submission.id %}" 
+                       class="list-group-item list-group-item-action submission-{{ submission.result }}">
+                        {{ submission.problem.title }} - 
+                        <span class="badge bg-secondary">{{ submission.result|upper }}</span>
+                    </a>
+                    {% empty %}
+                    <div class="alert alert-info">No submissions yet</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+<!-- portal/templates/portal/admin/dashboard.html -->
+{% extends 'portal/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-warning">Pending User Approvals</div>
+            <div class="card-body">
+                {% for user in pending_users %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    {{ user.username }}
+                    <a href="{% url 'approve_content' 'user' user.id %}" class="btn btn-sm btn-success">
+                        Approve
+                    </a>
+                </div>
+                {% empty %}
+                <div class="alert alert-info">No pending user approvals</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Similar cards for Problems and Contests -->
+    </div>
+</div>
+{% endblock %}

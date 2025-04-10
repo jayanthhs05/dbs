@@ -1,0 +1,60 @@
+<!-- portal/templates/portal/problems/detail.html (excerpt) -->
+{% extends 'portal/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                <h3 class="mb-0">{{ problem.title }}</h3>
+                <span class="difficulty-{{ problem.difficulty }}">{{ problem.difficulty|title }}</span>
+            </div>
+            <div class="card-body">
+                <!-- Problem metadata and description... -->
+            </div>
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="card">
+            <!-- Comments and discussion... -->
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Submit Solution Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Submit Solution</h5>
+            </div>
+            <div class="card-body">
+                {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'submit_solution' problem_id=problem.id %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ submission_form.language.id_for_label }}" class="form-label">Language</label>
+                            {{ submission_form.language }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ submission_form.code.id_for_label }}" class="form-label">Code</label>
+                            {{ submission_form.code }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-paper-plane me-2"></i> Submit
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-muted">Please <a href="{% url 'login' %}">log in</a> to submit a solution.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- User's Submissions -->
+        {% if user.is_authenticated and user_submissions %}
+            <!-- Previous submission history... -->
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

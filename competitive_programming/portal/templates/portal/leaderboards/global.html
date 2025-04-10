@@ -1,0 +1,35 @@
+{% extends 'portal/base.html' %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-success text-white">
+        <h4>Global Leaderboard</h4>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Username</th>
+                    <th>Rating</th>
+                    <th>Submissions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <a href="{% url 'profile' user.username %}">
+                            {{ user.username }}
+                        </a>
+                    </td>
+                    <td>{{ user.rating }}</td>
+                    <td>{{ user.submissions.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
