@@ -1,24 +1,20 @@
-<!-- portal/templates/portal/auth/register.html -->
-{% extends 'portal/base.html' %}
-
-{% block content %}
+{% extends 'portal/base.html' %} {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Register Account</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <button type="submit" class="btn btn-primary w-100">Register</button>
-                </form>
-                <div class="mt-3 text-center">
-                    Already have an account? <a href="{% url 'login' %}">Login here</a>
-                </div>
-            </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">Register Account</h4>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %} {{ form.as_p }}
+          <button type="submit" class="btn btn-primary w-100">Register</button>
+        </form>
+        <div class="mt-3 text-center">
+          Already have an account? <a href="{% url 'login' %}">Login here</a>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

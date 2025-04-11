@@ -1,10 +1,7 @@
 from django.db import models
-
-
-from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-
+from django.db.models import Count
 
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -132,6 +129,15 @@ class Leaderboard(models.Model):
 
     def __str__(self):
         return f"Leaderboard for {self.contest.name}"
+    
+    def update_leaderboard(self):
+        entries = self.entries.annotate(
+            num_problems=Count('user__submission__problem', distinct=True)
+        ).order_by('-score', 'num_problems')
+        
+        for rank, entry in enumerate(entries, start=1):
+            entry.rank = rank
+            entry.save()
 
 
 class LeaderboardEntry(models.Model):

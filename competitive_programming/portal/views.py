@@ -116,39 +116,31 @@ def add_test_case(request, problem_id):
 
 
 def problem_list(request):
-    selected_difficulty = request.GET.get('difficulty', '')
-    selected_tags = request.GET.getlist('tags', [])
-    
-    # Base queryset with proper visibility rules
+    selected_difficulty = request.GET.get("difficulty", "")
+    selected_tags = request.GET.getlist("tags", [])
+
     problems = Problem.objects.all()
     if request.user.is_authenticated:
-        problems = problems.filter(
-            Q(is_approved=True) | 
-            Q(created_by=request.user)
-        )
+        problems = problems.filter(Q(is_approved=True) | Q(created_by=request.user))
     else:
         problems = problems.filter(is_approved=True)
 
-    # Apply difficulty filter
-    if selected_difficulty in ['easy', 'medium', 'hard']:
+    if selected_difficulty in ["easy", "medium", "hard"]:
         problems = problems.filter(difficulty=selected_difficulty)
 
-    # Apply tag filter
     if selected_tags:
         problems = problems.filter(tags__id__in=selected_tags).distinct()
 
-    # Get all tags for filter options
     all_tags = Tag.objects.all()
 
     context = {
-        "problems": problems.order_by('-created_at'),  # Fixed variable name
+        "problems": problems.order_by("-created_at"),
         "all_tags": all_tags,
-        "selected_tags": [int(tag) for tag in selected_tags],  # Convert to integers for template
+        "selected_tags": [int(tag) for tag in selected_tags],
         "selected_difficulty": selected_difficulty,
     }
-    
-    return render(request, "portal/problems/list.html", context)
 
+    return render(request, "portal/problems/list.html", context)
 
 
 @login_required
@@ -202,33 +194,41 @@ def add_comment(request):
         if form.is_valid():
             comment = form.save(commit=False)
             comment.user = request.user
-            
-            # Handle problem comments
-            if 'problem_id' in request.POST:
-                comment.problem = get_object_or_404(Problem, id=request.POST["problem_id"])
-                redirect_url = reverse('problem_detail', args=[request.POST["problem_id"]])
-            
-            # Handle contest comments
-            elif 'contest_id' in request.POST:
-                comment.contest = get_object_or_404(Contest, id=request.POST["contest_id"])
-                redirect_url = reverse('contest_detail', args=[request.POST["contest_id"]])
-            
-            # Handle submission comments
-            elif 'submission_id' in request.POST:
-                comment.submission = get_object_or_404(Submission, id=request.POST["submission_id"])
-                redirect_url = reverse('submission_detail', args=[request.POST["submission_id"]])
-            
+
+            if "problem_id" in request.POST:
+                comment.problem = get_object_or_404(
+                    Problem, id=request.POST["problem_id"]
+                )
+                redirect_url = reverse(
+                    "problem_detail", args=[request.POST["problem_id"]]
+                )
+
+            elif "contest_id" in request.POST:
+                comment.contest = get_object_or_404(
+                    Contest, id=request.POST["contest_id"]
+                )
+                redirect_url = reverse(
+                    "contest_detail", args=[request.POST["contest_id"]]
+                )
+
+            elif "submission_id" in request.POST:
+                comment.submission = get_object_or_404(
+                    Submission, id=request.POST["submission_id"]
+                )
+                redirect_url = reverse(
+                    "submission_detail", args=[request.POST["submission_id"]]
+                )
+
             else:
                 messages.error(request, "Invalid comment target")
-                return redirect('home')
-            
+                return redirect("home")
+
             comment.save()
             messages.success(request, "Comment added successfully!")
             return redirect(redirect_url)
-        
-        messages.error(request, "Comment cannot be empty")
-    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
+        messages.error(request, "Comment cannot be empty")
+    return redirect(request.META.get("HTTP_REFERER", "home"))
 
 
 @login_required
@@ -253,20 +253,20 @@ def global_leaderboard(request):
 
 
 def home(request):
-    selected_difficulty = request.GET.get('difficulty', '')
-    selected_tags = request.GET.getlist('tags', [])
+    selected_difficulty = request.GET.get("difficulty", "")
+    selected_tags = request.GET.getlist("tags", [])
     recent_problems = Problem.objects.filter(is_approved=True)
-    if selected_difficulty in ['easy', 'medium', 'hard']:
+    if selected_difficulty in ["easy", "medium", "hard"]:
         recent_problems = recent_problems.filter(difficulty=selected_difficulty)
     if selected_tags:
         recent_problems = recent_problems.filter(tags__id__in=selected_tags).distinct()
-    recent_problems = recent_problems.order_by('-created_at')[:5]
+    recent_problems = recent_problems.order_by("-created_at")[:5]
     active_contests = Contest.objects.filter(
         start_time__lte=timezone.now(), end_time__gte=timezone.now()
     )
-    upcoming_contests = Contest.objects.filter(
-        start_time__gt=timezone.now()
-    ).order_by('start_time')[:3]
+    upcoming_contests = Contest.objects.filter(start_time__gt=timezone.now()).order_by(
+        "start_time"
+    )[:3]
     top_users = User.objects.filter(role="competitor").order_by("-rating")[:10]
     all_tags = Tag.objects.all()
 
@@ -279,7 +279,7 @@ def home(request):
         "selected_tags": selected_tags,
         "selected_difficulty": selected_difficulty,
     }
-    
+
     return render(request, "portal/home.html", context)
 
 
@@ -377,12 +377,19 @@ def submit_solution(request, problem_id):
             submission.save()
 
             all_passed = True
-            for test_case in problem.test_cases.all():
+            total_runtime = 0
+            max_memory = 0
 
+            for test_case in problem.test_cases.all():
                 actual_output = simulate_code_execution(
                     submission.code, test_case.input_data, test_case.expected_output
                 )
                 passed = actual_output.strip() == test_case.expected_output.strip()
+
+                test_runtime = random.randint(10, 20)
+                test_memory = random.randint(8, 16)
+                total_runtime += test_runtime
+                max_memory = max(max_memory, test_memory)
 
                 SubmissionTestCase.objects.create(
                     submission=submission,
@@ -395,11 +402,11 @@ def submit_solution(request, problem_id):
                     all_passed = False
 
             submission.status = "accepted" if all_passed else "wrong_answer"
+            submission.runtime = total_runtime
+            submission.memory = max_memory
             submission.save()
-
             messages.success(request, "Submission evaluated successfully!")
             return redirect("submission_detail", submission_id=submission.id)
-
     else:
         form = SubmissionForm()
 

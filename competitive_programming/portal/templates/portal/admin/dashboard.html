@@ -1,79 +1,95 @@
-<!-- portal/templates/portal/admin/dashboard.html -->
-{% extends 'portal/base.html' %}
-
-{% block content %}
+{% extends 'portal/base.html' %} {% block content %}
 <div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <div class="card-header bg-warning">Pending User Approvals</div>
-            <div class="card-body">
-                {% for user in pending_users %}
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <strong>{{ user.username }}</strong> 
-                        <span class="badge bg-secondary">{{ user.role }}</span>
-                    </div>
-                    <div>
-                        <a href="{% url 'approve_content' 'user' user.id %}" class="btn btn-sm btn-success">
-                            Approve
-                        </a>
-                        <a href="{% url 'delete_user' user.id %}" class="btn btn-sm btn-danger">
-                            Delete
-                        </a>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="alert alert-info">No pending user approvals</div>
-                {% endfor %}
-            </div>
+  <div class="col-md-4">
+    <div class="card mb-4">
+      <div class="card-header bg-warning">Pending User Approvals</div>
+      <div class="card-body">
+        {% for user in pending_users %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <strong>{{ user.username }}</strong>
+            <span class="badge bg-secondary">{{ user.role }}</span>
+          </div>
+          <div>
+            <a
+              href="{% url 'approve_content' 'user' user.id %}"
+              class="btn btn-sm btn-success"
+            >
+              Approve
+            </a>
+            <a
+              href="{% url 'delete_user' user.id %}"
+              class="btn btn-sm btn-danger"
+            >
+              Delete
+            </a>
+          </div>
         </div>
+        {% empty %}
+        <div class="alert alert-info">No pending user approvals</div>
+        {% endfor %}
+      </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <div class="card-header bg-warning">Pending Problems</div>
-            <div class="card-body">
-                {% for problem in pending_problems %}
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <strong>{{ problem.title }}</strong>
-                        <div class="small text-muted">by {{ problem.created_by.username }}</div>
-                    </div>
-                    <div>
-                        <a href="{% url 'approve_content' 'problem' problem.id %}" class="btn btn-sm btn-success">
-                            Approve
-                        </a>
-                        <a href="{% url 'delete_problem_admin' problem.id %}" class="btn btn-sm btn-danger">
-                            Delete
-                        </a>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="alert alert-info">No pending problem approvals</div>
-                {% endfor %}
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-4">
+      <div class="card-header bg-warning">Pending Problems</div>
+      <div class="card-body">
+        {% for problem in pending_problems %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <strong>{{ problem.title }}</strong>
+            <div class="small text-muted">
+              by {{ problem.created_by.username }}
             </div>
+          </div>
+          <div>
+            <a
+              href="{% url 'approve_content' 'problem' problem.id %}"
+              class="btn btn-sm btn-success"
+            >
+              Approve
+            </a>
+            <a
+              href="{% url 'delete_problem_admin' problem.id %}"
+              class="btn btn-sm btn-danger"
+            >
+              Delete
+            </a>
+          </div>
         </div>
+        {% empty %}
+        <div class="alert alert-info">No pending problem approvals</div>
+        {% endfor %}
+      </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <div class="card-header bg-warning">Pending Contests</div>
-            <div class="card-body">
-                {% for contest in pending_contests %}
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <strong>{{ contest.name }}</strong>
-                        <div class="small text-muted">{{ contest.start_time|date:"M d, Y" }}</div>
-                    </div>
-                    <a href="{% url 'approve_content' 'contest' contest.id %}" class="btn btn-sm btn-success">
-                        Approve
-                    </a>
-                </div>
-                {% empty %}
-                <div class="alert alert-info">No pending contest approvals</div>
-                {% endfor %}
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-4">
+      <div class="card-header bg-warning">Pending Contests</div>
+      <div class="card-body">
+        {% for contest in pending_contests %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <strong>{{ contest.name }}</strong>
+            <div class="small text-muted">
+              {{ contest.start_time|date:"M d, Y" }}
             </div>
+          </div>
+          <a
+            href="{% url 'approve_content' 'contest' contest.id %}"
+            class="btn btn-sm btn-success"
+          >
+            Approve
+          </a>
         </div>
+        {% empty %}
+        <div class="alert alert-info">No pending contest approvals</div>
+        {% endfor %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

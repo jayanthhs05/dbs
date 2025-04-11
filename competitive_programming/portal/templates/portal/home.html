@@ -1,37 +1,41 @@
-<!-- portal/templates/portal/home.html (excerpt) -->
-{% extends 'portal/base.html' %}
-
-{% block content %}
+{% extends 'portal/base.html' %} {% block content %}
 <div class="row">
-    <div class="col-md-8">
-        <div class="jumbotron bg-light p-4 rounded mb-4">
-            <h1 class="display-5">Welcome to CodeArena</h1>
-            <p class="lead">Improve your coding skills by solving problems and competing with others.</p>
-            <hr class="my-4">
-            <p>Join thousands of programmers in exciting coding challenges and contests. Track your progress and climb the leaderboard!</p>
-            {% if not user.is_authenticated %}
-                <a class="btn btn-primary btn-lg" href="{% url 'register' %}" role="button">Join Now</a>
-            {% else %}
-                <a class="btn btn-primary btn-lg" href="{% url 'problem_list' %}" role="button">Start Coding</a>
-            {% endif %}
-        </div>
-        
-        <!-- Recent Problems -->
-        <div class="card mb-4">
-            <!-- Problem list... -->
-        </div>
+  <div class="col-md-8">
+    <div class="jumbotron bg-light p-4 rounded mb-4">
+      <h1 class="display-5">Welcome to CodeArena</h1>
+      <p class="lead">
+        Improve your coding skills by solving problems and competing with
+        others.
+      </p>
+      <hr class="my-4" />
+      <p>
+        Join thousands of programmers in exciting coding challenges and
+        contests. Track your progress and climb the leaderboard!
+      </p>
+      {% if not user.is_authenticated %}
+      <a
+        class="btn btn-primary btn-lg"
+        href="{% url 'register' %}"
+        role="button"
+        >Join Now</a
+      >
+      {% else %}
+      <a
+        class="btn btn-primary btn-lg"
+        href="{% url 'problem_list' %}"
+        role="button"
+        >Start Coding</a
+      >
+      {% endif %}
     </div>
-    
-    <div class="col-md-4">
-        <!-- Active Contests -->
-        <div class="card mb-4">
-            <!-- Contest list... -->
-        </div>
-        
-        <!-- Top Users -->
-        <div class="card">
-            <!-- Top users... -->
-        </div>
-    </div>
+
+    <div class="card mb-4"></div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-4"></div>
+
+    <div class="card"></div>
+  </div>
 </div>
 {% endblock %}
