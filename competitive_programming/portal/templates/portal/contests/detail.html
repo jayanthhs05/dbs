@@ -5,8 +5,7 @@
       <div class="card-header bg-primary text-white">
         <h3 class="mb-0">{{ contest.name }}</h3>
         <div class="contest-timings">
-          {{ contest.start_time|date:"M d, Y H:i" }} - {{
-          contest.end_time|date:"M d, Y H:i" }}
+          {{ contest.start_time|date:"M d, Y H:i" }} - {{ contest.end_time|date:"M d, Y H:i" }}
         </div>
       </div>
       <div class="card-body">
@@ -161,8 +160,7 @@
 
           <dt class="col-6">Time Remaining</dt>
           <dd class="col-6 text-end">
-            {% if contest.is_active %} {{ contest.end_time|timeuntil }} {% else
-            %} Contest ended {% endif %}
+            {% if contest.is_active %} {{ contest.end_time|timeuntil }} {% else %} Contest ended {% endif %}
           </dd>
         </dl>
       </div>

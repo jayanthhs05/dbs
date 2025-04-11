@@ -10,8 +10,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <span class="badge bg-primary me-2">
-              {{ contest.start_time|date:"M d, H:i" }} - {{
-              contest.end_time|date:"M d, H:i" }}
+              {{ contest.start_time|date:"M d, H:i" }} - {{ contest.end_time|date:"M d, H:i" }}
             </span>
             <span class="badge bg-success">
               {{ contest.participants.count }} participants
