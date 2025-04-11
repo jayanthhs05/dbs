@@ -38,6 +38,11 @@ class ContestAdmin(admin.ModelAdmin):
         "participants",
     )
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if not hasattr(obj, "leaderboard"):
+            Leaderboard.objects.create(contest=obj)
+
 
 class LeaderboardEntryInline(admin.TabularInline):
     model = LeaderboardEntry

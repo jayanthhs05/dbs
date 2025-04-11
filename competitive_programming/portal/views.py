@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -115,8 +116,11 @@ def add_test_case(request, problem_id):
 
 
 def problem_list(request):
-    problems = Problem.objects.all()
+    selected_difficulty = request.GET.get('difficulty', '')
+    selected_tags = request.GET.getlist('tags', [])
     
+    # Base queryset with proper visibility rules
+    problems = Problem.objects.all()
     if request.user.is_authenticated:
         problems = problems.filter(
             Q(is_approved=True) | 
@@ -125,50 +129,59 @@ def problem_list(request):
     else:
         problems = problems.filter(is_approved=True)
 
-    difficulty = request.GET.get("difficulty")
-    if difficulty in ["easy", "medium", "hard"]:
-        problems = problems.filter(difficulty=difficulty)
+    # Apply difficulty filter
+    if selected_difficulty in ['easy', 'medium', 'hard']:
+        problems = problems.filter(difficulty=selected_difficulty)
 
-    search_query = request.GET.get("q")
-    if search_query:
-        problems = problems.filter(
-            Q(title__icontains=search_query)
-            | Q(description__icontains=search_query)
-            | Q(tags__name__icontains=search_query)
-        ).distinct()
+    # Apply tag filter
+    if selected_tags:
+        problems = problems.filter(tags__id__in=selected_tags).distinct()
 
-    return render(
-        request,
-        "portal/problems/list.html",
-        {
-            "problems": problems,
-            "search_query": search_query,
-            "selected_difficulty": difficulty,
-        },
-    )
+    # Get all tags for filter options
+    all_tags = Tag.objects.all()
+
+    context = {
+        "problems": problems.order_by('-created_at'),  # Fixed variable name
+        "all_tags": all_tags,
+        "selected_tags": [int(tag) for tag in selected_tags],  # Convert to integers for template
+        "selected_difficulty": selected_difficulty,
+    }
+    
+    return render(request, "portal/problems/list.html", context)
+
 
 
 @login_required
 def create_contest(request):
-    if not (request.user.role in ['problem_setter', 'admin'] and request.user.is_approved):
+    if not (
+        request.user.role in ["problem_setter", "admin"] and request.user.is_approved
+    ):
         messages.error(request, "You don't have permission to create contests")
-        return redirect('home')
+        return redirect("home")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = ContestForm(request.POST)
         if form.is_valid():
             contest = form.save(commit=False)
-            contest.is_approved = request.user.role == 'admin'
+            contest.created_by = request.user
+            contest.is_approved = request.user.role == "admin"
             contest.save()
-            form.save_m2m()  # Save problems
-            messages.success(request, "Contest created! It will be visible after admin approval.")
-            return redirect('contest_detail', contest_id=contest.id)
+            form.save_m2m()
+
+            if not hasattr(contest, "leaderboard"):
+                leaderboard = Leaderboard.objects.create(contest=contest)
+            contest.save()
+            messages.success(
+                request,
+                "Contest created successfully! It will be visible after admin approval!",
+            )
+            return redirect("contest_detail", contest_id=contest.id)
         else:
             messages.error(request, "Error creating contest. Please check the form.")
     else:
         form = ContestForm()
-    
-    return render(request, 'portal/contests/create.html', {'form': form})
+
+    return render(request, "portal/contests/create.html", {"form": form})
 
 
 @login_required
@@ -189,24 +202,33 @@ def add_comment(request):
         if form.is_valid():
             comment = form.save(commit=False)
             comment.user = request.user
-
-            if "problem_id" in request.POST:
-                comment.problem = get_object_or_404(
-                    Problem, id=request.POST["problem_id"]
-                )
-            elif "contest_id" in request.POST:
-                comment.contest = get_object_or_404(
-                    Contest, id=request.POST["contest_id"]
-                )
-            elif "submission_id" in request.POST:
-                comment.submission = get_object_or_404(
-                    Submission, id=request.POST["submission_id"]
-                )
-
+            
+            # Handle problem comments
+            if 'problem_id' in request.POST:
+                comment.problem = get_object_or_404(Problem, id=request.POST["problem_id"])
+                redirect_url = reverse('problem_detail', args=[request.POST["problem_id"]])
+            
+            # Handle contest comments
+            elif 'contest_id' in request.POST:
+                comment.contest = get_object_or_404(Contest, id=request.POST["contest_id"])
+                redirect_url = reverse('contest_detail', args=[request.POST["contest_id"]])
+            
+            # Handle submission comments
+            elif 'submission_id' in request.POST:
+                comment.submission = get_object_or_404(Submission, id=request.POST["submission_id"])
+                redirect_url = reverse('submission_detail', args=[request.POST["submission_id"]])
+            
+            else:
+                messages.error(request, "Invalid comment target")
+                return redirect('home')
+            
             comment.save()
             messages.success(request, "Comment added successfully!")
-            return redirect(request.META.get("HTTP_REFERER", "home"))
-    return redirect("home")
+            return redirect(redirect_url)
+        
+        messages.error(request, "Comment cannot be empty")
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
+
 
 
 @login_required
@@ -231,38 +253,52 @@ def global_leaderboard(request):
 
 
 def home(request):
-    recent_problems = Problem.objects.all().order_by("-created_at")[:5]
+    selected_difficulty = request.GET.get('difficulty', '')
+    selected_tags = request.GET.getlist('tags', [])
+    recent_problems = Problem.objects.filter(is_approved=True)
+    if selected_difficulty in ['easy', 'medium', 'hard']:
+        recent_problems = recent_problems.filter(difficulty=selected_difficulty)
+    if selected_tags:
+        recent_problems = recent_problems.filter(tags__id__in=selected_tags).distinct()
+    recent_problems = recent_problems.order_by('-created_at')[:5]
     active_contests = Contest.objects.filter(
         start_time__lte=timezone.now(), end_time__gte=timezone.now()
     )
-    upcoming_contests = Contest.objects.filter(start_time__gt=timezone.now()).order_by(
-        "start_time"
-    )[:3]
+    upcoming_contests = Contest.objects.filter(
+        start_time__gt=timezone.now()
+    ).order_by('start_time')[:3]
     top_users = User.objects.filter(role="competitor").order_by("-rating")[:10]
+    all_tags = Tag.objects.all()
 
     context = {
         "recent_problems": recent_problems,
         "active_contests": active_contests,
         "upcoming_contests": upcoming_contests,
         "top_users": top_users,
+        "all_tags": all_tags,
+        "selected_tags": selected_tags,
+        "selected_difficulty": selected_difficulty,
     }
+    
     return render(request, "portal/home.html", context)
 
 
 def problem_detail(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
-    
-    # Check visibility
+
     if not problem.is_approved:
-        if not (request.user.is_authenticated and 
-               (request.user == problem.created_by or 
-                request.user.role == 'admin')):
+        if not (
+            request.user.is_authenticated
+            and (request.user == problem.created_by or request.user.role == "admin")
+        ):
             messages.error(request, "This problem is not available yet")
-            return redirect('problem_list')
-    
+            return redirect("problem_list")
+
     user_submissions = (
-        Submission.objects.filter(user=request.user, problem=problem).order_by(
-            "-submitted_at"
+        (
+            Submission.objects.filter(user=request.user, problem=problem)
+            .prefetch_related("test_results__test_case")
+            .order_by("-submitted_at")
         )
         if request.user.is_authenticated
         else None
@@ -271,6 +307,8 @@ def problem_detail(request, problem_id):
     comments = Comment.objects.filter(problem=problem).select_related("user")
     comment_form = CommentForm()
     submission_form = SubmissionForm()
+    comments = problem.comments.all().order_by("-created_at")
+    test_cases = problem.test_cases.all()
 
     context = {
         "problem": problem,
@@ -278,6 +316,8 @@ def problem_detail(request, problem_id):
         "comments": comments,
         "comment_form": comment_form,
         "submission_form": submission_form,
+        "test_cases": test_cases,
+        "comments": comments,
     }
     return render(request, "portal/problems/detail.html", context)
 
@@ -285,54 +325,76 @@ def problem_detail(request, problem_id):
 @login_required
 def edit_problem(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
-    
-    # Enhanced permission check
-    if not (request.user == problem.created_by or 
-           (request.user.role == 'admin' and request.user.is_approved)):
+    if not (request.user == problem.created_by or request.user.role == "admin"):
         messages.error(request, "You don't have permission to edit this problem")
-        return redirect('problem_detail', problem_id=problem_id)
+        return redirect("problem_detail", problem_id=problem_id)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = ProblemForm(request.POST, instance=problem)
-        if form.is_valid():
-            edited_problem = form.save(commit=False)
-            # Reset approval status if edited by non-admin
-            if request.user.role != 'admin':
-                edited_problem.is_approved = False
-                edited_problem.approved_by = None
-            edited_problem.save()
-            form.save_m2m()  # Save tags relationship
-            messages.success(request, "Problem updated successfully!")
-            return redirect('problem_detail', problem_id=problem.id)
-        else:
-            messages.error(request, "Error updating problem. Please check the form.")
+        test_case_formset = TestCaseFormset(
+            request.POST, instance=problem, prefix="testcases"
+        )
+        if form.is_valid() and test_case_formset.is_valid():
+            problem = form.save()
+            test_case_formset.save()
+            messages.success(request, "Problem updated successfully with test cases!")
+            return redirect("problem_detail", problem_id=problem.id)
     else:
         form = ProblemForm(instance=problem)
+        test_case_formset = TestCaseFormset(instance=problem, prefix="testcases")
 
-    return render(request, 'portal/problems/edit.html', {
-        'form': form,
-        'problem': problem
-    })
+    return render(
+        request,
+        "portal/problems/edit.html",
+        {"form": form, "problem": problem, "test_case_formset": test_case_formset},
+    )
 
+
+def simulate_code_execution(code, input_data, expected_output):
+    if random.choice([True, False]):
+        return expected_output
+    else:
+        error_types = [
+            expected_output[::-1],
+            expected_output.upper(),
+            "",
+            f"error_{random.randint(1000,9999)}",
+            expected_output[:-1],
+        ]
+        return random.choice(error_types)
 
 
 @login_required
 def submit_solution(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
-
     if request.method == "POST":
         form = SubmissionForm(request.POST)
         if form.is_valid():
             submission = form.save(commit=False)
             submission.user = request.user
             submission.problem = problem
+            submission.status = "running"
             submission.save()
 
-            submission.result = random.choice(
-                ["accepted", "wrong_answer", "time_limit_exceeded", "runtime_error"]
-            )
-            submission.runtime = random.randint(10, 500)
-            submission.memory = random.randint(1000, 10000)
+            all_passed = True
+            for test_case in problem.test_cases.all():
+
+                actual_output = simulate_code_execution(
+                    submission.code, test_case.input_data, test_case.expected_output
+                )
+                passed = actual_output.strip() == test_case.expected_output.strip()
+
+                SubmissionTestCase.objects.create(
+                    submission=submission,
+                    test_case=test_case,
+                    passed=passed,
+                    actual_output=actual_output,
+                )
+
+                if not passed:
+                    all_passed = False
+
+            submission.status = "accepted" if all_passed else "wrong_answer"
             submission.save()
 
             messages.success(request, "Submission evaluated successfully!")
@@ -348,7 +410,10 @@ def submit_solution(request, problem_id):
 
 def submission_detail(request, submission_id):
     submission = get_object_or_404(
-        Submission.objects.select_related("user", "problem"), id=submission_id
+        Submission.objects.select_related("user", "problem").prefetch_related(
+            "test_results__test_case"
+        ),
+        id=submission_id,
     )
     comments = Comment.objects.filter(submission=submission).select_related("user")
     comment_form = CommentForm()
@@ -398,15 +463,15 @@ def contest_list(request):
 
 def contest_detail(request, contest_id):
     contest = get_object_or_404(Contest, id=contest_id)
-    
-    # Visibility check
+
     if not contest.is_approved:
-        if not (request.user.is_authenticated and 
-               (request.user == contest.created_by or 
-                request.user.role == 'admin')):
+        if not (
+            request.user.is_authenticated
+            and (request.user == contest.created_by or request.user.role == "admin")
+        ):
             messages.error(request, "This contest is not available yet")
-            return redirect('contest_list')
-    
+            return redirect("contest_list")
+
     leaderboard = contest.leaderboard
     leaderboard_entries = (
         LeaderboardEntry.objects.filter(leaderboard=leaderboard)
@@ -418,12 +483,14 @@ def contest_detail(request, contest_id):
 
     is_registered = request.user in contest.participants.all()
     is_active = contest.is_active
+    comments = contest.comments.all().order_by("-created_at")
 
     context = {
         "contest": contest,
         "leaderboard_entries": leaderboard_entries,
         "is_registered": is_registered,
         "is_active": is_active,
+        "comments": comments,
     }
     return render(request, "portal/contests/detail.html", context)
 
@@ -512,31 +579,35 @@ def approve_content(request, model_name, obj_id):
     return redirect("admin_dashboard")
 
 
-@login_required
 def create_problem(request):
-    if not (request.user.role in ['problem_setter', 'admin'] and request.user.is_approved):
+    if not (
+        request.user.role in ["problem_setter", "admin"] and request.user.is_approved
+    ):
         messages.error(request, "You don't have permission to create problems")
-        return redirect('home')
+        return redirect("home")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = ProblemForm(request.POST)
-        if form.is_valid():
+        test_case_formset = TestCaseFormset(request.POST, prefix="testcases")
+        if form.is_valid() and test_case_formset.is_valid():
             problem = form.save(commit=False)
             problem.created_by = request.user
-            # Auto-approve if created by admin
-            problem.is_approved = request.user.role == 'admin'
+            problem.is_approved = request.user.role == "admin"
             problem.save()
-            form.save_m2m()  # Save tags
-            messages.success(request, "Problem created successfully! It will be visible to others after admin approval.")
-            return redirect('problem_detail', problem_id=problem.id)
-        else:
-            print(form.errors)
-            messages.error(request, "Error creating problem. Please check the form.")
+            form.save_m2m()
+            test_case_formset.instance = problem
+            test_case_formset.save()
+            messages.success(request, "Problem created successfully with test cases!")
+            return redirect("problem_detail", problem_id=problem.id)
     else:
         form = ProblemForm()
-    
-    return render(request, 'portal/problems/create.html', {'form': form})
+        test_case_formset = TestCaseFormset(prefix="testcases")
 
+    return render(
+        request,
+        "portal/problems/create.html",
+        {"form": form, "test_case_formset": test_case_formset},
+    )
 
 
 @login_required

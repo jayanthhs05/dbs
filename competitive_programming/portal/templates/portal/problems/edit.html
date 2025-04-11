@@ -38,6 +38,36 @@
                             {{ form.tags }}
                         </div>
                     </div>
+                    
+                    <h5 class="mt-4 mb-3">Test Cases</h5>
+                    {{ test_case_formset.management_form }}
+                    <div id="test-cases">
+                        {% for form in test_case_formset %}
+                        <div class="test-case-form mb-3 border p-3 rounded">
+                            {{ form.id }}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label>Input Data</label>
+                                    {{ form.input_data }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Expected Output</label>
+                                    {{ form.expected_output }}
+                                </div>
+                            </div>
+                            {% if form.instance.pk %}
+                            <div class="form-check mt-2">
+                                {{ form.DELETE }}
+                                <label class="form-check-label text-danger">Delete this test case</label>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" id="add-test-case" class="btn btn-secondary mb-3">
+                        <i class="fas fa-plus"></i> Add Test Case
+                    </button>
+                    
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save me-2"></i>Save Changes
@@ -51,4 +81,19 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('add-test-case').addEventListener('click', function() {
+        const formCount = document.getElementById('id_testcases-TOTAL_FORMS');
+        const newForm = document.querySelector('.test-case-form').cloneNode(true);
+        const newFormHtml = newForm.innerHTML.replace(/testcases-(\d+)-/g, `testcases-${formCount.value}-`);
+        newForm.innerHTML = newFormHtml.replace(/<input[^>]+value="[^"]*"/g, match => match.replace(/value="[^"]*"/, 'value=""'));
+        document.getElementById('test-cases').appendChild(newForm);
+        formCount.value = parseInt(formCount.value) + 1;
+    });
+});
+</script>
 {% endblock %}
+{% endblock content %}

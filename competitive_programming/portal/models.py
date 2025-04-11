@@ -89,6 +89,8 @@ class Submission(models.Model):
     )
     memory = models.IntegerField(null=True, blank=True, help_text="Memory usage in KB")
     submitted_at = models.DateTimeField(auto_now_add=True)
+    test_cases = models.ManyToManyField(TestCase, through="SubmissionTestCase")
+    status = models.CharField(max_length=20, default="pending")
 
     def __str__(self):
         return f"{self.user.username}'s submission for {self.problem.title}"
@@ -105,6 +107,9 @@ class Contest(models.Model):
     approved_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
+    created_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="created_contests"
+    )
 
     def __str__(self):
         return self.name
@@ -113,6 +118,11 @@ class Contest(models.Model):
     def is_active(self):
         now = timezone.now()
         return self.start_time <= now <= self.end_time
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not hasattr(self, 'leaderboard'):
+            leaderboard = Leaderboard.objects.create(contest=self)
 
 
 class Leaderboard(models.Model):
@@ -176,3 +186,15 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.user.username}"
+
+
+class SubmissionTestCase(models.Model):
+    submission = models.ForeignKey(
+        Submission, on_delete=models.CASCADE, related_name="test_results"
+    )
+    test_case = models.ForeignKey(TestCase, on_delete=models.CASCADE)
+    passed = models.BooleanField()
+    actual_output = models.TextField()
+
+    class Meta:
+        unique_together = ("submission", "test_case")

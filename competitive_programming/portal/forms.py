@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import User, Problem, TestCase, Submission, Contest, Comment, Tag
+from django.forms import inlineformset_factory
 
 
 class UserRegistrationForm(UserCreationForm):
@@ -84,3 +85,13 @@ class TagForm(forms.ModelForm):
     class Meta:
         model = Tag
         fields = ("name",)
+
+
+TestCaseFormset = inlineformset_factory(
+    Problem,
+    TestCase,
+    form=TestCaseForm,
+    extra=1,
+    can_delete=True,
+    fields=('input_data', 'expected_output')
+)
