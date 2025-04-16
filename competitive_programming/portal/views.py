@@ -7,7 +7,6 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from .models import *
 from .forms import *
-
 import random
 
 
@@ -33,7 +32,6 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-
                 next_url = request.GET.get("next", "home")
                 if next_url == request.path:
                     next_url = "home"
@@ -77,7 +75,6 @@ def edit_profile_view(request):
 def create_problem(request):
     if request.user.role not in ["problem_setter", "admin"]:
         return redirect("home")
-
     if request.method == "POST":
         form = ProblemForm(request.POST)
         if form.is_valid():
@@ -97,7 +94,6 @@ def add_test_case(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
     if request.user != problem.created_by and not request.user.is_superuser:
         return redirect("problem_detail", problem_id=problem_id)
-
     if request.method == "POST":
         form = TestCaseForm(request.POST)
         if form.is_valid():
@@ -118,28 +114,22 @@ def add_test_case(request, problem_id):
 def problem_list(request):
     selected_difficulty = request.GET.get("difficulty", "")
     selected_tags = request.GET.getlist("tags", [])
-
     problems = Problem.objects.all()
     if request.user.is_authenticated:
         problems = problems.filter(Q(is_approved=True) | Q(created_by=request.user))
     else:
         problems = problems.filter(is_approved=True)
-
     if selected_difficulty in ["easy", "medium", "hard"]:
         problems = problems.filter(difficulty=selected_difficulty)
-
     if selected_tags:
         problems = problems.filter(tags__id__in=selected_tags).distinct()
-
     all_tags = Tag.objects.all()
-
     context = {
         "problems": problems.order_by("-created_at"),
         "all_tags": all_tags,
         "selected_tags": [int(tag) for tag in selected_tags],
         "selected_difficulty": selected_difficulty,
     }
-
     return render(request, "portal/problems/list.html", context)
 
 
@@ -150,7 +140,6 @@ def create_contest(request):
     ):
         messages.error(request, "You don't have permission to create contests")
         return redirect("home")
-
     if request.method == "POST":
         form = ContestForm(request.POST)
         if form.is_valid():
@@ -159,7 +148,6 @@ def create_contest(request):
             contest.is_approved = request.user.role == "admin"
             contest.save()
             form.save_m2m()
-
             if not hasattr(contest, "leaderboard"):
                 leaderboard = Leaderboard.objects.create(contest=contest)
             contest.save()
@@ -172,7 +160,6 @@ def create_contest(request):
             messages.error(request, "Error creating contest. Please check the form.")
     else:
         form = ContestForm()
-
     return render(request, "portal/contests/create.html", {"form": form})
 
 
@@ -194,7 +181,6 @@ def add_comment(request):
         if form.is_valid():
             comment = form.save(commit=False)
             comment.user = request.user
-
             if "problem_id" in request.POST:
                 comment.problem = get_object_or_404(
                     Problem, id=request.POST["problem_id"]
@@ -202,7 +188,6 @@ def add_comment(request):
                 redirect_url = reverse(
                     "problem_detail", args=[request.POST["problem_id"]]
                 )
-
             elif "contest_id" in request.POST:
                 comment.contest = get_object_or_404(
                     Contest, id=request.POST["contest_id"]
@@ -210,7 +195,6 @@ def add_comment(request):
                 redirect_url = reverse(
                     "contest_detail", args=[request.POST["contest_id"]]
                 )
-
             elif "submission_id" in request.POST:
                 comment.submission = get_object_or_404(
                     Submission, id=request.POST["submission_id"]
@@ -218,15 +202,12 @@ def add_comment(request):
                 redirect_url = reverse(
                     "submission_detail", args=[request.POST["submission_id"]]
                 )
-
             else:
                 messages.error(request, "Invalid comment target")
                 return redirect("home")
-
             comment.save()
             messages.success(request, "Comment added successfully!")
             return redirect(redirect_url)
-
         messages.error(request, "Comment cannot be empty")
     return redirect(request.META.get("HTTP_REFERER", "home"))
 
@@ -235,7 +216,6 @@ def add_comment(request):
 def create_tag(request):
     if request.user.role not in ["problem_setter", "admin"]:
         return redirect("home")
-
     if request.method == "POST":
         form = TagForm(request.POST)
         if form.is_valid():
@@ -269,7 +249,6 @@ def home(request):
     )[:3]
     top_users = User.objects.filter(role="competitor").order_by("-rating")[:10]
     all_tags = Tag.objects.all()
-
     context = {
         "recent_problems": recent_problems,
         "active_contests": active_contests,
@@ -279,13 +258,11 @@ def home(request):
         "selected_tags": selected_tags,
         "selected_difficulty": selected_difficulty,
     }
-
     return render(request, "portal/home.html", context)
 
 
 def problem_detail(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
-
     if not problem.is_approved:
         if not (
             request.user.is_authenticated
@@ -293,7 +270,6 @@ def problem_detail(request, problem_id):
         ):
             messages.error(request, "This problem is not available yet")
             return redirect("problem_list")
-
     user_submissions = (
         (
             Submission.objects.filter(user=request.user, problem=problem)
@@ -303,13 +279,11 @@ def problem_detail(request, problem_id):
         if request.user.is_authenticated
         else None
     )
-
     comments = Comment.objects.filter(problem=problem).select_related("user")
     comment_form = CommentForm()
     submission_form = SubmissionForm()
     comments = problem.comments.all().order_by("-created_at")
     test_cases = problem.test_cases.all()
-
     context = {
         "problem": problem,
         "user_submissions": user_submissions,
@@ -328,7 +302,6 @@ def edit_problem(request, problem_id):
     if not (request.user == problem.created_by or request.user.role == "admin"):
         messages.error(request, "You don't have permission to edit this problem")
         return redirect("problem_detail", problem_id=problem_id)
-
     if request.method == "POST":
         form = ProblemForm(request.POST, instance=problem)
         test_case_formset = TestCaseFormset(
@@ -342,7 +315,6 @@ def edit_problem(request, problem_id):
     else:
         form = ProblemForm(instance=problem)
         test_case_formset = TestCaseFormset(instance=problem, prefix="testcases")
-
     return render(
         request,
         "portal/problems/edit.html",
@@ -375,32 +347,26 @@ def submit_solution(request, problem_id):
             submission.problem = problem
             submission.status = "running"
             submission.save()
-
             all_passed = True
             total_runtime = 0
             max_memory = 0
-
             for test_case in problem.test_cases.all():
                 actual_output = simulate_code_execution(
                     submission.code, test_case.input_data, test_case.expected_output
                 )
                 passed = actual_output.strip() == test_case.expected_output.strip()
-
                 test_runtime = random.randint(10, 20)
                 test_memory = random.randint(8, 16)
                 total_runtime += test_runtime
                 max_memory = max(max_memory, test_memory)
-
                 SubmissionTestCase.objects.create(
                     submission=submission,
                     test_case=test_case,
                     passed=passed,
                     actual_output=actual_output,
                 )
-
                 if not passed:
                     all_passed = False
-
             submission.status = "accepted" if all_passed else "wrong_answer"
             submission.runtime = total_runtime
             submission.memory = max_memory
@@ -409,7 +375,6 @@ def submit_solution(request, problem_id):
             return redirect("submission_detail", submission_id=submission.id)
     else:
         form = SubmissionForm()
-
     return render(
         request, "portal/submissions/submit.html", {"problem": problem, "form": form}
     )
@@ -424,7 +389,6 @@ def submission_detail(request, submission_id):
     )
     comments = Comment.objects.filter(submission=submission).select_related("user")
     comment_form = CommentForm()
-
     context = {
         "submission": submission,
         "comments": comments,
@@ -440,7 +404,6 @@ def user_submissions(request):
         .select_related("problem")
         .order_by("-submitted_at")
     )
-
     return render(request, "portal/submissions/list.html", {"submissions": submissions})
 
 
@@ -448,15 +411,12 @@ def contest_list(request):
     active_contests = Contest.objects.filter(
         start_time__lte=timezone.now(), end_time__gte=timezone.now()
     ).order_by("-start_time")
-
     upcoming_contests = Contest.objects.filter(start_time__gt=timezone.now()).order_by(
         "start_time"
     )
-
     past_contests = Contest.objects.filter(end_time__lt=timezone.now()).order_by(
         "-end_time"
     )
-
     return render(
         request,
         "portal/contests/list.html",
@@ -470,7 +430,6 @@ def contest_list(request):
 
 def contest_detail(request, contest_id):
     contest = get_object_or_404(Contest, id=contest_id)
-
     if not contest.is_approved:
         if not (
             request.user.is_authenticated
@@ -478,7 +437,6 @@ def contest_detail(request, contest_id):
         ):
             messages.error(request, "This contest is not available yet")
             return redirect("contest_list")
-
     leaderboard = contest.leaderboard
     leaderboard_entries = (
         LeaderboardEntry.objects.filter(leaderboard=leaderboard)
@@ -487,11 +445,9 @@ def contest_detail(request, contest_id):
         if leaderboard
         else None
     )
-
     is_registered = request.user in contest.participants.all()
     is_active = contest.is_active
     comments = contest.comments.all().order_by("-created_at")
-
     context = {
         "contest": contest,
         "leaderboard_entries": leaderboard_entries,
@@ -505,7 +461,6 @@ def contest_detail(request, contest_id):
 def search(request):
     query = request.GET.get("q", "")
     results = Problem.objects.none()
-
     if query:
         results = (
             Problem.objects.filter(
@@ -516,7 +471,6 @@ def search(request):
             .distinct()
             .order_by("-created_at")
         )
-
     return render(
         request, "portal/search/results.html", {"results": results, "query": query}
     )
@@ -524,7 +478,6 @@ def search(request):
 
 @login_required
 def admin_dashboard(request):
-
     if not (
         request.user.is_superuser
         or (request.user.role == "admin" and request.user.is_approved)
@@ -533,19 +486,15 @@ def admin_dashboard(request):
             request, "You don't have permission to access the admin dashboard."
         )
         return redirect("home")
-
     pending_users = User.objects.filter(
         Q(role="admin") | Q(role="problem_setter"), is_approved=False
     ).order_by("date_joined")
-
     pending_problems = (
         Problem.objects.filter(is_approved=False)
         .select_related("created_by")
         .order_by("-created_at")
     )
-
     pending_contests = Contest.objects.filter(is_approved=False).order_by("-start_time")
-
     return render(
         request,
         "portal/admin/dashboard.html",
@@ -559,30 +508,24 @@ def admin_dashboard(request):
 
 @login_required
 def approve_content(request, model_name, obj_id):
-
     if not (
         request.user.is_superuser
         or (request.user.role == "admin" and request.user.is_approved)
     ):
         messages.error(request, "You don't have permission to approve content.")
         return redirect("home")
-
     model_map = {"user": User, "problem": Problem, "contest": Contest}
-
     if model_name not in model_map:
         messages.error(request, f"Invalid content type: {model_name}")
         return redirect("admin_dashboard")
-
     try:
         obj = get_object_or_404(model_map[model_name], id=obj_id)
         obj.is_approved = True
         obj.approved_by = request.user
         obj.save()
-
         messages.success(request, f"{model_name.capitalize()} approved successfully!")
     except Exception as e:
         messages.error(request, f"Error approving {model_name}: {str(e)}")
-
     return redirect("admin_dashboard")
 
 
@@ -592,7 +535,6 @@ def create_problem(request):
     ):
         messages.error(request, "You don't have permission to create problems")
         return redirect("home")
-
     if request.method == "POST":
         form = ProblemForm(request.POST)
         test_case_formset = TestCaseFormset(request.POST, prefix="testcases")
@@ -609,7 +551,6 @@ def create_problem(request):
     else:
         form = ProblemForm()
         test_case_formset = TestCaseFormset(prefix="testcases")
-
     return render(
         request,
         "portal/problems/create.html",
@@ -620,7 +561,6 @@ def create_problem(request):
 @login_required
 def delete_problem(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
-
     if (
         request.user.role == "admin"
         and request.user.is_approved
@@ -628,7 +568,6 @@ def delete_problem(request, problem_id):
     ):
         problem.delete()
         messages.success(request, "Problem deleted successfully!")
-
     return redirect("problem_list")
 
 
@@ -640,13 +579,11 @@ def delete_user(request, user_id):
     ):
         messages.error(request, "You don't have permission to delete users")
         return redirect("home")
-
     user = get_object_or_404(User, id=user_id)
     if request.method == "POST":
         user.delete()
         messages.success(request, f"User {user.username} deleted successfully")
         return redirect("admin_dashboard")
-
     return render(
         request,
         "portal/admin/confirm_delete.html",
@@ -662,13 +599,11 @@ def delete_problem_admin(request, problem_id):
     ):
         messages.error(request, "You don't have permission to delete problems")
         return redirect("home")
-
     problem = get_object_or_404(Problem, id=problem_id)
     if request.method == "POST":
         problem.delete()
         messages.success(request, "Problem deleted successfully")
         return redirect("admin_dashboard")
-
     return render(
         request,
         "portal/admin/confirm_delete.html",
@@ -680,7 +615,6 @@ def delete_problem_admin(request, problem_id):
 def my_problems(request):
     if request.user.role != "problem_setter" or not request.user.is_approved:
         return redirect("home")
-
     problems = Problem.objects.filter(created_by=request.user).order_by("-created_at")
     return render(request, "portal/problems/my_problems.html", {"problems": problems})
 
@@ -688,16 +622,13 @@ def my_problems(request):
 @login_required
 def delete_problem(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
-
     if request.user != problem.created_by and not (
         request.user.role == "admin" and request.user.is_approved
     ):
         messages.error(request, "You don't have permission to delete this problem")
         return redirect("home")
-
     if request.method == "POST":
         problem.delete()
         messages.success(request, "Problem deleted successfully")
         return redirect("my_problems")
-
     return render(request, "portal/problems/confirm_delete.html", {"problem": problem})

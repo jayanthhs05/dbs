@@ -50,8 +50,12 @@ WSGI_APPLICATION = "competitive_programming.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "competitive_programming",
+        "USER": "jayanth",
+        "PASSWORD": "jayanthhs05",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
